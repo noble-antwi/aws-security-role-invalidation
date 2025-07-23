@@ -90,8 +90,8 @@ A4L-InstanceRole-TDHLFluqhnhA
 # Extract temporary credentials
 $ curl http://169.254.169.254/latest/meta-data/iam/security-credentials/A4L-InstanceRole-TDHLFluqhnhA
 {
-  "AccessKeyId": "ASIAZDHYX3ENS3KXG3WA",
-  "SecretAccessKey": "bMJWZGRd4bmetp1XAJHWyOYl3zeFZ+UAI2ZNk+je", 
+  "AccessKeyId": "ASIA****************G3WA",
+  "SecretAccessKey": "bMJW************************************k+je", 
   "Token": "IQoJb3JpZ2luX2VjEMr//////////wEaCXVzLWVhc3QtMSJH...",
   "Expiration": "2025-07-22T07:50:38Z"
 }
@@ -233,8 +233,8 @@ This project is based on the excellent educational content by **[Adrian Cantrill
 ## Support
 
 ### Getting Help
-- Review the [demonstration guide](docs/demonstration-guide.md) for detailed steps
-- Check [command outputs](evidence/commands/demonstration-evidence.md) for expected results
+- Review the [demonstration guide](docs/demonstration_guide.md) for detailed steps
+- Check [command outputs](evidence/commands/demonstration_evidence.md) for expected results
 - Examine [screenshots](evidence/screenshots/) for visual guidance
 - Open an issue for questions or problems
 
