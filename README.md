@@ -1,23 +1,23 @@
 # AWS Security Role Invalidation Project
 
-> **🎯 Practical demonstration of IAM role session revocation for handling credential leakage incidents**
+> **## Practical demonstration of IAM role session revocation for handling credential leakage incidents**
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![AWS](https://img.shields.io/badge/AWS-CloudFormation-orange.svg)](infrastructure/A4LHostingInc.yaml)
 [![Security](https://img.shields.io/badge/Security-IAM%20Credential%20Management-red.svg)](docs/security-theory.md)
 
-## 🌟 Project Overview
+## Project Overview
 
 This project demonstrates a critical AWS security incident response technique: **IAM Role Session Revocation**. When EC2 instance credentials are compromised and leaked, this method allows security teams to neutralize the threat without disrupting legitimate services.
 
-### 🎯 What This Project Demonstrates
+### What This Project Demonstrates
 
 - **Real credential extraction** from EC2 instance metadata
 - **Local credential usage** by an attacker on external systems  
 - **Session revocation technique** using conditional deny policies
 - **Service restoration** for legitimate users while keeping attackers locked out
 
-## 🔬 The Security Scenario
+## The Security Scenario
 
 ### Background
 The Animals4Life organization runs animal blog websites on AWS EC2 instances. Each instance uses IAM roles for secure access to AWS services like S3 and CloudWatch. However, when an instance is compromised, the temporary credentials can be extracted and used from anywhere.
@@ -31,7 +31,7 @@ The Animals4Life organization runs animal blog websites on AWS EC2 instances. Ea
 ### The Solution
 Use **conditional deny policies** that block access for credentials issued before a specific timestamp, while allowing legitimate users to re-assume the role with fresh credentials.
 
-## 🏗️ Infrastructure Architecture
+## Infrastructure Architecture
 
 The CloudFormation template deploys:
 - **VPC** with dual-stack networking (IPv4/IPv6)
@@ -41,9 +41,9 @@ The CloudFormation template deploys:
 - **CloudWatch monitoring** with comprehensive logging
 - **Security groups** with intentional vulnerabilities for demonstration
 
-![Architecture Overview](assets/diagrams/architecture-overview.png)
 
-## 🚀 Quick Start
+![Architecture Overview](asset/diagram/architecture-overview.png)
+## Quick Start
 
 ### Prerequisites
 - AWS CLI configured with CloudFormation permissions
@@ -58,11 +58,10 @@ aws cloudformation create-stack \
   --template-body file://infrastructure/A4LHostingInc.yaml \
   --capabilities CAPABILITY_IAM
 ```
-
 ### 2. Follow the Demonstration
-1. **[Attack Simulation](demonstration/attack-simulation/)** - Extract and use credentials
-2. **[Incident Response](demonstration/incident-response/)** - Revoke sessions and restore service
-3. **[Evidence Review](demonstration/evidence/)** - Review outputs and screenshots
+1. **[Evidence Documentation](evidence/commands/demonstration-evidence.md)** - Complete attack and response evidence
+2. **[Visual Evidence](files/evidence/screenshots/)** - Screenshots of each phase
+3. **[Technical Analysis](/docs/demonstration_guide.md)** - Detailed walkthrough
 
 ### 3. Clean Up
 ```bash
@@ -70,21 +69,22 @@ aws cloudformation create-stack \
 aws cloudformation delete-stack --stack-name aws-security-role-invalidation
 ```
 
-## 📚 Documentation
+## Documentation
 
 | Document | Description | 
 |----------|-------------|
-| [🏗️ Infrastructure Analysis](docs/infrastructure-analysis.md) | Detailed CloudFormation template breakdown |
-| [🔒 Security Theory](docs/security-theory.md) | IAM role invalidation concepts |
-| [🎯 Demonstration Guide](docs/demonstration-guide.md) | Complete walkthrough with evidence |
-| [📖 Attribution](docs/attribution.md) | Credits to Adrian Cantrill |
+| [Infrastructure Analysis](docs/infrastructure-analysis.md) | Detailed CloudFormation template breakdown |
+| [Security Theory](docs/security-theory.md) | IAM role invalidation concepts |
+| [Demonstration Guide](docs/demonstration-guide.md) | Complete walkthrough with evidence |
+| [Attribution](docs/attribution.md) | Credits to Adrian Cantrill |
 
-## 🔴 Attack Simulation Results
+## Attack Simulation Results
 
 ### Credential Extraction (Successful)
 ```bash
 # Extract role name from instance metadata
 $ curl http://169.254.169.254/latest/meta-data/iam/security-credentials/
+
 A4L-InstanceRole-TDHLFluqhnhA
 
 # Extract temporary credentials
@@ -98,6 +98,7 @@ $ curl http://169.254.169.254/latest/meta-data/iam/security-credentials/A4L-Inst
 ```
 
 ### Local Credential Usage (Successful)
+
 ```bash
 # Configure stolen credentials on Ubuntu system
 export AWS_ACCESS_KEY_ID=ASIAZDHYX3ENS3KXG3WA
@@ -112,7 +113,7 @@ $ aws ec2 describe-instances --region us-east-1 --output table
 # Successfully lists all EC2 instances
 ```
 
-## 🛡️ Incident Response Results  
+## Incident Response Results  
 
 ### Session Revocation (Applied)
 - **Timestamp**: 2025-07-21 at 9:08 PM CDT  
@@ -120,6 +121,7 @@ $ aws ec2 describe-instances --region us-east-1 --output table
 - **Policy Applied**: Conditional deny for tokens issued before timestamp
 
 ### Impact Verification (Successful)
+
 ```bash
 # Attacker credentials blocked
 $ aws s3 ls
@@ -146,7 +148,7 @@ Unable to locate credentials...
 ## 🔍 Security Analysis
 
 ### Vulnerability Assessment
-- **SSH Access**: Open to 0.0.0.0/0 (⚠️ Intentional for demonstration)
+- **SSH Access**: Open to 0.0.0.0/0 (Intentional for demonstration)
 - **Instance Metadata**: Accessible without IMDSv2 enforcement
 - **IAM Permissions**: Broad read access to S3 and EC2
 - **Network Placement**: Public subnets with direct internet access
@@ -163,7 +165,7 @@ Unable to locate credentials...
 - **Incident Response**: Session revocation capability
 - **Recovery**: Non-disruptive service restoration
 
-## 📊 Key Metrics
+## Key Metrics
 
 | Metric | Value | Notes |
 |--------|-------|-------|
@@ -175,7 +177,7 @@ Unable to locate credentials...
 | **Service Restoration** | < 5 minutes | Instance stop/start cycle |
 | **Credential Lifetime** | ~6.5 hours | Original expiration time |
 
-## 🎓 Educational Value
+## Educational Value
 
 ### Learning Objectives
 - Understand IAM role temporary credential mechanics
@@ -195,7 +197,7 @@ Unable to locate credentials...
 3. What happens to legitimate users during session revocation?
 4. How do you restore service without affecting security?
 
-## 🏢 Real-World Applications
+## Real-World Applications
 
 ### Enterprise Security Teams
 - **Training**: Hands-on credential leakage response
@@ -203,13 +205,7 @@ Unable to locate credentials...
 - **Assessment**: Security control effectiveness testing
 - **Compliance**: Audit trail and response capability demonstration
 
-### Educational Institutions  
-- **Coursework**: Cloud security practical exercises
-- **Research**: Academic security research platform
-- **Certification**: AWS security specialty exam preparation
-- **Skills Development**: Professional security skill building
-
-## ⚠️ Security Notice
+##  Security Notice
 
 **This project intentionally creates vulnerable infrastructure for educational purposes.**
 
@@ -219,7 +215,7 @@ Unable to locate credentials...
 - **Clean up resources after demonstrations**
 - **Follow your organization's security policies**
 
-## 📄 Attribution
+## Attribution
 
 This project is based on the excellent educational content by **[Adrian Cantrill](https://learn.cantrill.io/)**:
 
@@ -234,17 +230,14 @@ This project is based on the excellent educational content by **[Adrian Cantrill
 - Organized demonstration with actual command outputs
 - Educational materials for skill development
 
-## 📞 Support
+## Support
 
 ### Getting Help
 - Review the [demonstration guide](docs/demonstration-guide.md) for detailed steps
-- Check [command outputs](demonstration/evidence/command-outputs/) for expected results
-- Examine [screenshots](demonstration/evidence/screenshots/) for visual guidance
+- Check [command outputs](evidence/commands/demonstration-evidence.md) for expected results
+- Examine [screenshots](evidence/screenshots/) for visual guidance
 - Open an issue for questions or problems
-
-### License
-Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
 
 ---
 
-**🎯 Master AWS credential security through hands-on experience with real attack scenarios and proven response techniques.**
+**Master AWS credential security through hands-on experience with real attack scenarios and proven response techniques.**
