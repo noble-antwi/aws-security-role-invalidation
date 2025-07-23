@@ -73,9 +73,13 @@ aws cloudformation delete-stack --stack-name aws-security-role-invalidation
 
 | Document | Description | 
 |----------|-------------|
+| [**Quick Reference**](docs/quick-reference.md) | **Essential commands for rapid demonstration execution** |
 | [Infrastructure Analysis](docs/infrastructure-analysis.md) | Detailed CloudFormation template breakdown |
 | [Security Theory](docs/security-theory.md) | IAM role invalidation concepts |
 | [Demonstration Guide](docs/demonstration-guide.md) | Complete walkthrough with evidence |
+| [Demonstration Evidence](docs/demonstration_evidence.md) | Forensic documentation with screenshots |
+| [Vulnerability Analysis](docs/vulnerability_analysis.md) | Security assessment and risk analysis |
+| [Lab Guide](docs/lab_guide.md) | Educational exercises and assessments |
 | [Attribution](docs/attribution.md) | Credits to Adrian Cantrill |
 
 ## Attack Simulation Results
@@ -233,7 +237,7 @@ This project is based on the excellent educational content by **[Adrian Cantrill
 ## Support
 
 ### Getting Help
-- Review the [demonstration guide](docs/demonstration_guide.md) for detailed steps
+- Review the [demonstration guide](docs/demonstration_evidence.md) for detailed steps
 - Check [command outputs](evidence/commands/demonstration_evidence.md) for expected results
 - Examine [screenshots](evidence/screenshots/) for visual guidance
 - Open an issue for questions or problems

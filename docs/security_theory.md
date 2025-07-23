@@ -1,12 +1,12 @@
 # Security Theory - IAM Role Session Invalidation
 
-> **📚 Comprehensive understanding of IAM role security mechanisms and credential compromise response**
+> **Comprehensive understanding of IAM role security mechanisms and credential compromise response**
 
-## 🎯 Overview
+## Overview
 
 IAM Role Session Invalidation is a critical security technique for handling credential leakage incidents in AWS environments. This document explains the theoretical foundation, technical mechanisms, and practical applications of this security control.
 
-## 🔑 IAM Role Fundamentals
+## IAM Role Fundamentals
 
 ### How IAM Roles Work
 
@@ -37,7 +37,7 @@ Identity → STS AssumeRole → Temporary Credentials → AWS Resources
 - **Shared Permissions**: All assumptions get identical permissions
 - **Renewable**: New credentials generated on each assumption
 
-## 🚨 The Security Problem
+## The Security Problem
 
 ### Credential Leakage Scenarios
 
@@ -50,21 +50,21 @@ Identity → STS AssumeRole → Temporary Credentials → AWS Resources
 
 ### Why Traditional Solutions Fail
 
-**Option 1: Delete the Role** ❌
+**Option 1: Delete the Role**
 ```
 Impact: ALL instances using the role lose access immediately
 Result: Service disruption across entire infrastructure
 Recovery: Recreate role + update all instance configurations
 ```
 
-**Option 2: Change Role Permissions** ❌  
+**Option 2: Change Role Permissions**
 ```
 Impact: ALL current and future assumptions affected
 Result: Legitimate users lose required permissions
 Recovery: Identify and restore necessary permissions
 ```
 
-**Option 3: Wait for Expiration** ❌
+**Option 3: Wait for Expiration**
 ```
 Impact: Attacker retains access for hours
 Result: Potential data exfiltration or infrastructure damage
@@ -79,7 +79,7 @@ Recovery: No immediate resolution available
 - AWS validates credentials locally without callback
 - Expiration time **cannot be modified** after issuance
 
-## 🛡️ Session Revocation Solution
+## Session Revocation Solution
 
 ### Conditional Deny Policy Mechanism
 
@@ -135,7 +135,7 @@ Recovery: No immediate resolution available
 11:01 AM - New assumption → TokenIssueTime: 11:01 AM (bypasses deny)
 ```
 
-## 🔄 Recovery Process
+## Recovery Process
 
 ### Legitimate User Restoration
 
@@ -177,7 +177,7 @@ T+0:06 - Validation testing completed
 - **User Impact**: Minimal - transparent to end users
 - **Data Impact**: Zero - no data loss or corruption
 
-## 🎯 Advanced Considerations
+## Advanced Considerations
 
 ### Enterprise Scale Implementation
 
@@ -219,7 +219,7 @@ def revoke_compromised_role(role_name):
 - **T1078.004**: Valid Accounts - Cloud Accounts
 - **T1484**: Domain Policy Modification (Defense)
 
-## 📊 Effectiveness Analysis
+## Effectiveness Analysis
 
 ### Security Metrics
 
@@ -239,12 +239,12 @@ def revoke_compromised_role(role_name):
 
 | Method | Speed | Precision | Business Impact | Complexity |
 |--------|-------|-----------|-----------------|------------|
-| **Session Revocation** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ |
-| Role Deletion | ⭐⭐⭐⭐ | ⭐ | ⭐ | ⭐⭐⭐⭐ |
-| Permission Changes | ⭐⭐⭐ | ⭐⭐ | ⭐⭐ | ⭐⭐⭐ |
-| Wait for Expiration | ⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐ |
+| Session Revocation | Excellent | Excellent | Low | Medium |
+| Role Deletion | Good | Poor | High | High |
+| Permission Changes | Fair | Fair | Medium | Medium |
+| Wait for Expiration | Poor | Excellent | None | Low |
 
-## 🔬 Research Applications
+## Research Applications
 
 ### Academic Research Areas
 
@@ -275,7 +275,7 @@ def revoke_compromised_role(role_name):
 - Classified data protection
 - Supply chain security
 
-## 📚 Further Reading
+## Further Reading
 
 ### AWS Documentation
 - [IAM Roles and Temporary Credentials](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html)
@@ -294,4 +294,4 @@ def revoke_compromised_role(role_name):
 
 ---
 
-**🎯 Understanding these theoretical foundations enables security professionals to implement robust, scalable credential compromise response procedures that balance security effectiveness with operational continuity.**
+**Understanding these theoretical foundations enables security professionals to implement robust, scalable credential compromise response procedures that balance security effectiveness with operational continuity.**

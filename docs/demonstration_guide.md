@@ -1,341 +1,183 @@
-# AWS Security Role Invalidation - Complete Demonstration Guide
+# AWS Security Role Invalidation - Quick Demonstration Guide
 
-> **📋 Step-by-step walkthrough of the credential leakage incident and response process**
+> **📋 Streamlined walkthrough for executing the credential compromise and response demonstration**
 
-This guide documents the complete demonstration process, from initial compromise through incident response and service restoration.
+This guide provides the essential commands and steps for running the security demonstration. For detailed evidence and explanations, see [demonstration_evidence.md](demonstration_evidence.md).
 
-## 🎯 Demonstration Overview
+## Prerequisites
 
-### Scenario
-The Animals4Life organization discovers that one of their EC2 instances has been compromised. The attacker has gained SSH access and is attempting to extract AWS credentials for lateral movement within the AWS environment.
+- AWS CLI configured with appropriate permissions
+- CloudFormation stack deployed (see [README.md](../README.md))
+- Access to EC2 instances via Session Manager
 
-### Objectives
-1. **Simulate realistic attack**: Extract temporary credentials from compromised instance
-2. **Demonstrate attack impact**: Show how stolen credentials work from external systems
-3. **Practice incident response**: Apply session revocation to neutralize the threat
-4. **Restore service**: Bring legitimate services back online without affecting security
+## Phase 1: Simulate Attack
 
-## 🔴 Phase 1: Attack Simulation
+### 1.1 Access Compromised Instance
 
-### 1.1 Initial Compromise
-
-**Scenario**: Attacker gains SSH access to EC2 instance through a vulnerability.
-
-**Evidence**: Connection established via AWS Session Manager
 ```bash
-# Connected to instance A4L-HostingA via Session Manager
-sh-4.2$ whoami
-ssm-user
+# Connect to instance via Session Manager
+aws ssm start-session --target [INSTANCE-ID]
 ```
 
-### 1.2 Role Discovery
+### 1.2 Extract Credentials
 
-**Objective**: Identify the IAM role attached to the compromised instance.
-
-**Command Executed**:
 ```bash
-sh-4.2$ curl http://169.254.169.254/latest/meta-data/iam/security-credentials/
+# Get role name
+curl http://169.254.169.254/latest/meta-data/iam/security-credentials/
+
+# Extract credentials (replace ROLE_NAME with output from above)
+curl http://169.254.169.254/latest/meta-data/iam/security-credentials/[ROLE_NAME]
 ```
 
-**Result**:
-```
-A4L-InstanceRole-TDHLFluqhnhA
-```
+📝 **Note the credentials**: AccessKeyId, SecretAccessKey, SessionToken, and Expiration time
 
-**Analysis**: Successfully identified the instance role name. This is the first step in credential extraction.
+### 1.3 Verify On-Instance Access
 
-### 1.3 Credential Extraction
-
-**Objective**: Extract temporary security credentials from instance metadata.
-
-**Command Executed**:
 ```bash
-sh-4.2$ curl http://169.254.169.254/latest/meta-data/iam/security-credentials/A4L-InstanceRole-TDHLFluqhnhA
+# Test AWS access from within instance
+aws s3 ls
+aws ec2 describe-instances --region us-east-1 --output table
 ```
 
-**Result**:
-```json
-{
-  "Code": "Success",
-  "LastUpdated": "2025-07-22T01:15:24Z",
-  "Type": "AWS-HMAC",
-  "AccessKeyId": "ASIAZDHYX3ENS3KXG3WA",
-  "SecretAccessKey": "bMJWZGRd4bmetp1XAJHWyOYl3zeFZ+UAI2ZNk+je",
-  "Token": "IQoJb3JpZ2luX2VjEMr//////////wEaCXVzLWVhc3QtMSJH...[TRUNCATED]",
-  "Expiration": "2025-07-22T07:50:38Z"
-}
-```
+## Phase 2: External Attack
 
-**Critical Information Extracted**:
-- **Access Key ID**: `ASIAZDHYX3ENS3KXG3WA`
-- **Secret Access Key**: `bMJWZGRd4bmetp1XAJHWyOYl3zeFZ+UAI2ZNk+je`
-- **Session Token**: `IQoJb3JpZ2luX2VjEMr//////////wEaCXVzLWVhc3QtMSJH...`
-- **Expiration Time**: `2025-07-22T07:50:38Z` (6+ hours of validity)
+### 2.1 Configure Stolen Credentials
 
-**Time Analysis**:
-- **Current Time**: July 21, 2025, 8:30 PM CDT
-- **Expiration Time**: July 22, 2025, 2:50 AM CDT  
-- **Remaining Validity**: ~6.5 hours
+On your local machine:
 
-### 1.4 On-Instance Testing
-
-**Objective**: Verify credentials work from the compromised instance.
-
-**Commands Executed**:
 ```bash
-# List S3 buckets
-sh-4.2$ aws s3 ls
-2025-05-02 02:34:43 cf-templates-nu92qc9cc5d4-us-east-1
-
-# Describe EC2 instances
-sh-4.2$ aws ec2 describe-instances --region us-east-1 --output table
+# Export credentials (use values from Phase 1.2)
+export AWS_ACCESS_KEY_ID=[EXTRACTED_ACCESS_KEY]
+export AWS_SECRET_ACCESS_KEY=[EXTRACTED_SECRET_KEY]
+export AWS_SESSION_TOKEN=[EXTRACTED_SESSION_TOKEN]
 ```
 
-**Result**: ✅ **Both commands successful** - Credentials provide access to S3 buckets and EC2 instance information.
+### 2.2 Verify External Access
 
-## 🌐 Phase 2: External Attack Execution
-
-### 2.1 Attacker Environment Setup
-
-**Platform**: Ubuntu system (external to AWS)
-**Objective**: Configure stolen credentials for use outside the compromised instance.
-
-**Initial State**:
 ```bash
-nantwi@ansible-controller:~/aws$ aws s3 ls
-Unable to locate credentials. You can configure credentials by running "aws configure".
+# Confirm attacker access works
+aws s3 ls
+aws ec2 describe-instances --region us-east-1 --output table
 ```
 
-### 2.2 Credential Configuration
+✅ **Attack simulation complete** - Credentials confirmed working externally
 
-**Method**: Environment variables (simulating credential leakage)
+## Phase 3: Incident Response
 
-**Commands Executed**:
+### 3.1 Apply Session Revocation
+
+1. Open AWS Console → IAM → Roles
+2. Search for `A4L-InstanceRole`
+3. Click **"Revoke active sessions"**
+4. Confirm the action
+
+⏱️ **Record timestamp** of revocation for reference
+
+### 3.2 Verify Attack Blocked
+
+From attacker's machine:
+
 ```bash
-export AWS_ACCESS_KEY_ID=ASIAZDHYX3ENS3KXG3WA
-export AWS_SECRET_ACCESS_KEY=bMJWZGRd4bmetp1XAJHWyOYl3zeFZ+UAI2ZNk+je
-export AWS_SESSION_TOKEN=IQoJb3JpZ2luX2VjEMr//////////wEaCXVzLWVhc3QtMSJH...
+# Test if stolen credentials still work
+aws s3 ls
+# Expected: "Unable to locate credentials" error
 ```
 
-### 2.3 External Access Validation
+From EC2 instance:
 
-**Objective**: Confirm stolen credentials work from attacker's external system.
-
-**S3 Access Test**:
 ```bash
-nantwi@ansible-controller:~/aws$ aws s3 ls
-2025-05-01 21:34:43 cf-templates-nu92qc9cc5d4-us-east-1
+# Legitimate access also temporarily blocked
+aws s3 ls
+# Expected: Access denied error
 ```
-**Result**: ✅ **Successful** - Attacker can access S3 buckets from external system
 
-**EC2 Access Test**:
+## Phase 4: Service Recovery
+
+### 4.1 Restart Affected Instances
+
 ```bash
-nantwi@ansible-controller:~/aws$ aws ec2 describe-instances --region us-east-1 --output table
-```
-**Result**: ✅ **Successful** - Attacker can enumerate EC2 instances from external system
+# Get instance IDs
+INSTANCES=$(aws ec2 describe-instances \
+  --filters "Name=iam-instance-profile.arn,Values=*A4L-InstanceRole*" \
+  --query "Reservations[].Instances[].InstanceId" \
+  --output text)
 
-**Critical Security Impact**: 
-- Attacker has **persistent access** even after leaving the compromised instance
-- Credentials work from **any location** with internet access
-- **6+ hours of validity** remaining for continued attacks
-- Access to **sensitive infrastructure information**
-
-## 🛡️ Phase 3: Incident Response
-
-### 3.1 Threat Detection & Analysis
-
-**Identified Role**: `A4L-InstanceRole-TDHLFluqhnhA`
-
-**Current Permissions**:
-- `CloudWatchAgentServerPolicy` - CloudWatch metrics and logs
-- `AmazonSSMManagedInstanceCore` - Systems Manager access  
-- `AmazonS3ReadOnlyAccess` - Read access to ALL S3 buckets
-- `AmazonEC2ReadOnlyAccess` - Describe ALL EC2 resources
-
-**Risk Assessment**:
-- **High**: Broad S3 read access across entire account
-- **Medium**: EC2 metadata exposure for reconnaissance  
-- **Medium**: Potential for data exfiltration from S3 buckets
-
-### 3.2 Session Revocation Process
-
-**Access Point**: AWS IAM Console → Roles → A4L-InstanceRole-TDHLFluqhnhA
-
-**Action**: Revoke Active Sessions
-
-**Process**:
-1. Navigate to IAM Role in AWS Console
-2. Click "Revoke Active Sessions" 
-3. Acknowledge the impact warning
-4. Confirm revocation
-
-**Timestamp Applied**: `2025-07-22T02:08:07.810Z` (July 21, 2025, 9:08 PM CDT)
-
-**Generated Policy**:
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Deny",
-      "Action": "*",
-      "Resource": "*",
-      "Condition": {
-        "DateLessThan": {
-          "aws:TokenIssueTime": "2025-07-22T02:08:07.810Z"
-        }
-      }
-    }
-  ]
-}
-```
-
-### 3.3 Impact Verification
-
-**Attacker System Testing**:
-```bash
-nantwi@ansible-controller:~$ aws s3 ls
-Unable to locate credentials. You can configure credentials by running "aws configure".
-```
-**Result**: ✅ **Attack Neutralized** - Stolen credentials no longer work
-
-**EC2 Instance Testing**:
-```bash
-sh-4.2$ aws s3 ls
-# Returns AccessDenied error
-```
-**Result**: ⚠️ **Expected Impact** - Legitimate instances also lose access (temporary)
-
-**Session Manager Testing**:
-- **Before Revocation**: Session Manager connection successful
-- **After Revocation**: Session Manager connection fails
-- **Cause**: Role lacks Systems Manager permissions due to deny policy
-
-## 🔄 Phase 4: Service Restoration
-
-### 4.1 Instance Recovery Process
-
-**Method**: Stop and restart instances to trigger fresh role assumption
-
-**Commands**:
-```bash
 # Stop instances
-aws ec2 stop-instances --instance-ids i-instanceA i-instanceB
+aws ec2 stop-instances --instance-ids $INSTANCES
 
 # Wait for stopped state
-aws ec2 describe-instances --instance-ids i-instanceA i-instanceB
+aws ec2 wait instance-stopped --instance-ids $INSTANCES
 
-# Start instances  
-aws ec2 start-instances --instance-ids i-instanceA i-instanceB
+# Start instances
+aws ec2 start-instances --instance-ids $INSTANCES
+
+# Wait for running state
+aws ec2 wait instance-running --instance-ids $INSTANCES
 ```
 
-**Timeline**:
-- **Stop Duration**: ~2-3 minutes
-- **Start Duration**: ~2-3 minutes  
-- **Total Downtime**: ~5-6 minutes
+### 4.2 Verify Service Restoration
 
-### 4.2 Service Validation
-
-**Session Manager Access**:
 ```bash
-# Reconnect via Session Manager
-# Connection successful - role assumption after revocation timestamp
+# Reconnect to instance
+aws ssm start-session --target [INSTANCE-ID]
+
+# Test restored access
+aws s3 ls
+# Expected: Successful listing
 ```
 
-**AWS API Access Testing**:
+### 4.3 Confirm Attacker Still Blocked
+
+From attacker's machine:
+
 ```bash
-sh-4.2$ aws s3 ls
-2025-05-01 21:34:43 cf-templates-nu92qc9cc5d4-us-east-1
+# Verify stolen credentials remain blocked
+aws s3 ls
+# Expected: Still getting credential error
 ```
-**Result**: ✅ **Service Restored** - Legitimate access fully functional
 
-**Application Testing**:
-- **Website A**: Accessible at public IP - Sophie's chicken rankings
-- **Website B**: Accessible at public IP - Dog treat grudge match
-- **CloudWatch Monitoring**: Logs and metrics flowing normally
+## Summary Checklist
 
-### 4.3 Final Security Verification
+- [ ] Extracted credentials from compromised instance
+- [ ] Confirmed external attack capability
+- [ ] Applied session revocation via IAM console
+- [ ] Verified attack neutralization
+- [ ] Restarted affected instances
+- [ ] Confirmed service restoration
+- [ ] Validated attacker remains blocked
 
-**Attacker Credentials (Persistent Test)**:
+## Quick Reference
+
+| Action | Time | Impact |
+|--------|------|--------|
+| Credential extraction | < 30 seconds | Attacker gains access |
+| External setup | < 2 minutes | Attack operational |
+| Session revocation | < 1 minute | Attack blocked |
+| Service recovery | < 6 minutes | Normal operations restored |
+
+## Troubleshooting
+
+### Session Manager Connection Issues
 ```bash
-nantwi@ansible-controller:~$ aws s3 ls
-Unable to locate credentials...
+# Verify instance is running
+aws ec2 describe-instance-status --instance-ids [INSTANCE-ID]
+
+# Check SSM agent status
+aws ssm describe-instance-information --instance-information-filter-list key=InstanceIds,valueSet=[INSTANCE-ID]
 ```
-**Result**: ✅ **Permanent Block** - Attacker credentials remain unusable
 
-**Security State Summary**:
-- ✅ Attack completely neutralized
-- ✅ Legitimate services fully restored  
-- ✅ No ongoing security impact
-- ✅ Original IAM role permissions intact
-- ✅ Conditional deny policy remains as protection
+### Revocation Policy Not Working
+- Ensure you clicked "Revoke active sessions" not just viewed the role
+- Check for the inline policy named "RevokeOldSessions"
+- Verify the timestamp in the policy is recent
 
-## 📊 Demonstration Results
-
-### Attack Success Metrics
-| Metric | Value | Impact |
-|--------|-------|--------|
-| **Time to Extract Credentials** | < 30 seconds | Very Fast |
-| **Credential Setup Time** | < 2 minutes | Very Fast |
-| **AWS Access Validation** | Immediate | High Impact |
-| **Credential Validity Period** | 6+ hours | Extended Risk |
-
-### Response Effectiveness Metrics  
-| Metric | Value | Effectiveness |
-|--------|-------|---------------|
-| **Detection to Revocation** | < 1 minute | Excellent |
-| **Attack Neutralization** | Immediate | Perfect |
-| **Service Restoration** | < 6 minutes | Excellent |
-| **False Positives** | 0 | Perfect |
-
-### Security Outcomes
-- ✅ **Complete attack neutralization** without deleting IAM role
-- ✅ **Zero impact** on other instances using the same role  
-- ✅ **Minimal service disruption** (brief restart only)
-- ✅ **Permanent protection** against the specific leaked credentials
-- ✅ **Scalable solution** for enterprise environments
-
-## 🔍 Technical Analysis
-
-### Why This Works
-1. **Conditional Deny Policy**: Only affects credentials issued before revocation timestamp
-2. **Explicit Deny**: Overrides all allow permissions (Deny-Allow-Deny principle)
-3. **Token Issue Time**: AWS tracks when each credential set was generated
-4. **Role Re-assumption**: Fresh credentials get new issue timestamps
-
-### Why Alternatives Don't Work
-- **Delete Role**: Affects ALL instances using it (potentially hundreds)
-- **Change Permissions**: Impacts ALL current and future assumptions
-- **Manual Invalidation**: Not possible with temporary credentials
-- **Password/Key Rotation**: Doesn't apply to temporary credentials
-
-### Security Benefits
-- **Surgical Precision**: Only affects compromised credentials
-- **Business Continuity**: Minimal impact on operations
-- **Immediate Response**: No waiting for credential expiration
-- **Audit Trail**: Clear policy shows exactly what was blocked
-
-## 📝 Lessons Learned
-
-### Security Best Practices Validated
-1. **Instance Metadata Protection**: Consider IMDSv2 enforcement
-2. **Network Segmentation**: Private subnets reduce exposure
-3. **Principle of Least Privilege**: Minimize IAM role permissions
-4. **Monitoring & Alerting**: CloudWatch detects unusual API patterns
-
-### Incident Response Procedures
-1. **Rapid Assessment**: Quickly identify affected credentials
-2. **Immediate Action**: Apply revocation without analysis paralysis  
-3. **Service Continuity**: Plan for legitimate user impact
-4. **Validation Testing**: Confirm both attack block and service restoration
-
-### Enterprise Considerations
-1. **Automation Opportunities**: Script the revocation and restart process
-2. **Communication Plans**: Notify teams of brief service interruptions
-3. **Documentation**: Maintain current role usage inventory
-4. **Training**: Ensure security teams know this technique
-
+### Service Not Recovering
+- Ensure instances fully stopped before starting
+- May need to restart applications that cache credentials
+- Check CloudWatch logs for errors
 
 ---
 
-**🎯 This demonstration proves that even sophisticated credential attacks can be completely neutralized using proper AWS security features, with minimal business impact and maximum security effectiveness.**
+📚 **For detailed evidence and explanations**, see [demonstration_evidence.md](demonstration_evidence.md)  
+🔬 **For security theory**, see [security_theory.md](security_theory.md)  
+🏗️ **For infrastructure details**, see [infrastructure_analysis.md](infrastructure_analysis.md)
